@@ -61,8 +61,8 @@ namespace Domain
         }
 
         public static IServiceCollection AddRepositoriesDependencies(this IServiceCollection services)
-            => services.AddTransient<IBbqRepository, BbqRepository>()
-            .AddTransient<IPersonRepository, PersonRepository>();
+            => services.AddScoped<IBbqRepository, BbqRepository>()
+            .AddScoped<IPersonRepository, PersonRepository>();
 
         private async static Task CreateIfNotExists(this CosmosClient client, string database, string collection)
         {

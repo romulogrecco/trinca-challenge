@@ -15,16 +15,25 @@ namespace Domain.Repositories
 
         public virtual async Task<T?> GetAsync(string streamId)
         {
-            var stream = await _eventStore.ReadStream(streamId, new ReadStreamOptions { MaxItemCount = int.MaxValue, IgnoreSnapshots = true });
+            try
+            {
+                var stream = await _eventStore.ReadStream(streamId, new ReadStreamOptions { MaxItemCount = int.MaxValue, IgnoreSnapshots = true });
 
-            var entity = new T();
+                var entity = new T();
 
-            if (stream.Stream == null)
-                return null;
+                if (stream.Stream == null)
+                    return null;
 
-            var @events = stream.Stream.Value.Events.Select(@event => (IEvent)@event.Body);
-            entity.Rehydrate(@events);
-            return entity;
+                var @events = stream.Stream.Value.Events.Select(@event => (IEvent)@event.Body);
+                entity.Rehydrate(@events);
+                return entity;
+            }
+            catch (Exception e)
+            {
+
+                throw;
+            }
+
         }
 
         public async Task<StreamHeaderResponse> GetHeaderAsync(string streamId)

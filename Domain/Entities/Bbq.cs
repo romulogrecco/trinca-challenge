@@ -1,5 +1,7 @@
-﻿using System;
-using Domain.Events;
+﻿using Domain.Events;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Domain.Entities
 {
@@ -9,12 +11,17 @@ namespace Domain.Entities
         public BbqStatus Status { get; set; }
         public DateTime Date { get; set; }
         public bool IsTrincasPaying { get; set; }
+        public List<string> ConfirmedGuests { get; set; }
+        public ShopList ShopList { get; set; }
+
+
         public void When(ThereIsSomeoneElseInTheMood @event)
         {
             Id = @event.Id.ToString();
             Date = @event.Date;
             Reason = @event.Reason;
             Status = BbqStatus.New;
+            ConfirmedGuests = new List<string>();  
         }
 
         public void When(BbqStatusUpdated @event)
@@ -30,11 +37,26 @@ namespace Domain.Entities
 
         public void When(InviteWasDeclined @event)
         {
-            //TODO:Deve ser possível rejeitar um convite já aceito antes.
-            //Se este for o caso, a quantidade de comida calculada pelo aceite anterior do convite
-            //deve ser retirado da lista de compras do churrasco.
-            //Se ao rejeitar, o número de pessoas confirmadas no churrasco for menor que sete,
-            //o churrasco deverá ter seu status atualizado para “Pendente de confirmações”. 
+            if (ShopList is null) ShopList = new ShopList(@event.InviteId);
+
+            if(ConfirmedGuests.Any(x => x == @event.PersonId))
+            {
+                ConfirmedGuests.Remove(@event.PersonId);
+                ShopList.Decrement(@event.isVeg);
+            }
+
+            if (ConfirmedGuests.Count() < 2) Status = BbqStatus.PendingConfirmations;
+        }
+
+        public void When(InviteWasAccepted @event)
+        {
+            if (ShopList is null) ShopList = new ShopList(@event.InviteId);
+
+            ShopList.Incremet(@event.IsVeg);
+
+            ConfirmedGuests.Add(@event.PersonId);
+
+            if (ConfirmedGuests.Count() == 2) Status = BbqStatus.Confirmed;     
         }
 
         public object TakeSnapshot()
